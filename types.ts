@@ -41,6 +41,13 @@ export interface ReportTemplate {
   content: string;
 }
 
+export interface ReportVersion {
+  id: string;
+  timestamp: string;
+  content: string;
+  authorName: string;
+}
+
 export interface MedicalReport {
   id: string;
   patientId: string;

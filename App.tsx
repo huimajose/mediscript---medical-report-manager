@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Patient, ReportTemplate, User } from './types';
+import { Patient, ReportTemplate, User, ReportVersion } from './types';
 import { MOCK_PATIENTS, REPORT_TEMPLATES } from './constants';
 import PatientTable from './components/PatientTable';
 import Editor from './components/Editor';
@@ -15,6 +15,7 @@ const App: React.FC = () => {
   const [reportContent, setReportContent] = useState<string>('');
   const [signatureName, setSignatureName] = useState<string>('');
   const [signatureImage, setSignatureImage] = useState<string>('');
+  const [reportVersions, setReportVersions] = useState<ReportVersion[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [templates, setTemplates] = useState<ReportTemplate[]>(REPORT_TEMPLATES);
 
@@ -40,16 +41,44 @@ const App: React.FC = () => {
     setReportContent('');
     setSignatureName('');
     setSignatureImage('');
+    setReportVersions([]);
     setView('list');
   };
 
   const handleOpenReport = (patient: Patient) => {
     if (!user?.permissions.canWriteReports) return;
     setSelectedPatient(patient);
-    setReportContent(`<h1>Medical Report: ${patient.name}</h1><p>Patient ID: ${patient.patientId}</p><p>Date: ${new Date().toLocaleDateString()}</p><hr/><p>Start typing report here...</p>`);
-    setSignatureName(user.name); // Default signature name to current medic
+    const initialContent = `<h1>Medical Report: ${patient.name}</h1><p>Patient ID: ${patient.patientId}</p><p>Date: ${new Date().toLocaleDateString()}</p><hr/><p>Start typing report here...</p>`;
+    setReportContent(initialContent);
+    setSignatureName(user.name); 
     setSignatureImage('');
+    
+    // Initial version
+    setReportVersions([{
+      id: `v-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      content: initialContent,
+      authorName: user.name
+    }]);
+    
     setView('editor');
+  };
+
+  const handleSaveVersion = () => {
+    if (!user) return;
+    const newVersion: ReportVersion = {
+      id: `v-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      content: reportContent,
+      authorName: user.name
+    };
+    setReportVersions(prev => [newVersion, ...prev]);
+  };
+
+  const handleRevertVersion = (version: ReportVersion) => {
+    if (confirm(`Are you sure you want to revert to the version from ${new Date(version.timestamp).toLocaleString()}? Current unsaved changes will be lost.`)) {
+      setReportContent(version.content);
+    }
   };
 
   if (!user) {
@@ -158,6 +187,9 @@ const App: React.FC = () => {
                    setSignatureName(name);
                    setSignatureImage(img);
                  }}
+                 versions={reportVersions}
+                 onSaveVersion={handleSaveVersion}
+                 onRevertVersion={handleRevertVersion}
                />
              )}
           </div>

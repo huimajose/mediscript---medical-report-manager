@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { formalizeReport } from '../services/geminiService';
-import { Patient, ReportTemplate } from '../types';
+import { Patient, ReportTemplate, ReportVersion } from '../types';
 
 interface EditorProps {
   content: string;
@@ -12,6 +12,9 @@ interface EditorProps {
   signatureName: string;
   signatureImage: string;
   onSignatureChange: (name: string, image: string) => void;
+  versions: ReportVersion[];
+  onSaveVersion: () => void;
+  onRevertVersion: (version: ReportVersion) => void;
 }
 
 type ExamTab = 'vitals' | 'assessment' | 'notes';
@@ -24,7 +27,10 @@ const Editor: React.FC<EditorProps> = ({
   canManageTemplates,
   signatureName,
   signatureImage,
-  onSignatureChange
+  onSignatureChange,
+  versions,
+  onSaveVersion,
+  onRevertVersion
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -283,10 +289,82 @@ const Editor: React.FC<EditorProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Version History Section (No-print) */}
+        <div className="no-print max-w-[21cm] mx-auto mt-12 mb-12 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-slate-200 text-slate-600 rounded-lg">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 tracking-tight">Report Version History</h3>
+                <p className="text-xs text-slate-500">Track changes and revert to previous states.</p>
+              </div>
+            </div>
+            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-widest rounded">
+              {versions.length} {versions.length === 1 ? 'Snapshot' : 'Snapshots'}
+            </span>
+          </div>
+          <div className="max-h-[300px] overflow-y-auto">
+            {versions.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 italic text-sm">No snapshots recorded yet.</div>
+            ) : (
+              <table className="w-full text-sm text-left text-slate-500">
+                <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/50 sticky top-0 backdrop-blur-sm">
+                  <tr>
+                    <th className="px-6 py-3 font-bold">Snapshot Time</th>
+                    <th className="px-6 py-3 font-bold">Captured By</th>
+                    <th className="px-6 py-3 font-bold text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {versions.map((version, index) => (
+                    <tr key={version.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-700">
+                          {new Date(version.timestamp).toLocaleString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                        {index === 0 && (
+                          <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-tighter">Latest</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {version.authorName}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          onClick={() => onRevertVersion(version)}
+                          className="px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-100 rounded-lg transition-all border border-blue-100"
+                        >
+                          Revert
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Signature Controls (No-print) */}
       <div className="no-print bg-white border-t border-slate-200 p-4 flex items-center justify-center space-x-6 shrink-0">
+        <div className="flex items-center space-x-4 border-r border-slate-100 pr-6 mr-6">
+          <button 
+            onClick={onSaveVersion}
+            className="flex items-center px-4 py-2 text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all shadow-sm"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+            Save Snapshot
+          </button>
+        </div>
         <div className="flex items-center space-x-4">
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Signer Name</label>

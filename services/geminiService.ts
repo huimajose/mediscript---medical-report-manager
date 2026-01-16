@@ -1,8 +1,10 @@
 
 import { GoogleGenAI } from "@google/genai";
 
+// Transform raw notes into a formal report using gemini-3-flash-preview
 export const formalizeReport = async (rawNotes: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Always use process.env.API_KEY directly for initialization
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -14,8 +16,10 @@ export const formalizeReport = async (rawNotes: string): Promise<string> => {
   return response.text || rawNotes;
 };
 
+// Suggest potential diagnoses based on symptoms using gemini-3-flash-preview
 export const suggestDiagnosis = async (symptoms: string): Promise<string> => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    // Always use process.env.API_KEY directly for initialization
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
